@@ -41,7 +41,7 @@ def get_params():
     args.add_argument("-beval_epo", "--base_eval_epoch", default=BEPO - 1, type=int)  # [1831 for NELL, 3583 for Wiki]   
     args.add_argument("-eval_epo", "--eval_epoch", default=EPO - 1, type=int)
 
-    # other setting
+    # other setting    
     args.add_argument("-abla", "--ablation", default=False, type=bool)
     args.add_argument("-metric", "--metric", default="MRR", choices=["MRR", "Hits@10", "Hits@5", "Hits@1"])
     args.add_argument("-prefix", "--prefix", default="exp1", type=str)
