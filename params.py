@@ -7,7 +7,7 @@ EPO = 22222
 
 def get_params():
     args = argparse.ArgumentParser()
-    args.add_argument("-seed", "--seed", default=42, type=int)
+    args.add_argument("-seed", "--seed", default=42, type=int)  
     args.add_argument("-form", "--data_form", default="Pre-Train", type=str)  # ["Pre-Train", "In-Train", "Discard"]
     
     # dataset setting
@@ -69,13 +69,11 @@ def get_params():
 data_dir = {
     'train_tasks': '/continual_train_tasks.json',
     'test_tasks': '/test_tasks.json',
-    'dev_tasks': '/con_base100_n100_dev_tasks.json',
-    'few_shot_dev_tasks': '/dev_tasks.json',
-    # 'few_shot_dev_tasks':'/dev_tasks.json',
+    'dev_tasks': '/con_base100_n100_dev_tasks.json',  # continual testing evaluation
+    'few_shot_dev_tasks': '/dev_tasks.json',  
+
     'rel2candidates': '/rel2candidates.json',
-
     'e1rel_e2': '/e1rel_e2.json',
-
     'ent2ids': '/ent2ids',
     'ent2vec': '/ent2vec.npy',
 }
