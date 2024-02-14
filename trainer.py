@@ -14,11 +14,6 @@ import logging
 from torch.autograd import Variable
 from utils import NCELoss
 
-"""
-
-"""
-
-
 def random_vice_param(model, vice_model, eta):
     for (name, param), (vice_name, vice_param) in zip(model.named_parameters(), vice_model.named_parameters()):
         vice_param.data = param.data.clone().detach() + eta * torch.normal(0,  # TODO: update eta to param if effect
@@ -65,23 +60,21 @@ worse_cache = [([["concept:animal:invertebrates001", "concept:animalthatfeedonin
                ([["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"]],),
-               ([["concept:animal:creatures", "concept:animalthatfeedoninsect",
-                  "concept:invertebrate:derbid_planthopper"],
-                 ["concept:animal:creatures", "concept:animalthatfeedoninsect",
-                  "concept:invertebrate:derbid_planthopper"],
-                 ["concept:animal:creatures", "concept:animalthatfeedoninsect",
-                  "concept:invertebrate:derbid_planthopper"]],)]
+               ([["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
+                 ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
+                 ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"]],)]
 
 
 class Trainer:
     def __init__(self, data_loaders, dataset, parameter):
         self.parameter = parameter
+
         # data loader
         self.train_data_loader = data_loaders[0]
         self.dev_data_loader = data_loaders[1]
         self.test_data_loader = data_loaders[2]
         self.fw_dev_data_loader = data_loaders[3]
-        # parameters
+
         self.bfew = parameter['base_classes_few']
         self.bnq = parameter['base_classes_num_query']
         self.br = parameter['base_classes_relation']
@@ -89,29 +82,29 @@ class Trainer:
         self.num_query = parameter['num_query']
         self.batch_size = parameter['batch_size']
         self.num_tasks = parameter['num_tasks']
-        self.learning_rate = parameter['learning_rate']
-        self.early_stopping_patience = parameter['early_stopping_patience']
-        self.early_NOVEL_stopping_patience = parameter['early_NOVEL_stopping_patience']
 
-        # epoch
-        self.epoch = parameter['epoch']
-        self.base_epoch = parameter['base_epoch']
-        self.print_epoch = parameter['print_epoch']
-        self.eval_epoch = parameter['eval_epoch']
-        self.base_eval_epoch = parameter['base_eval_epoch']
-        self.checkpoint_epoch = parameter['checkpoint_epoch']
-        # device
-        self.device = parameter['device']
+        # model
         self.metaR = PEMetaR(dataset, parameter)
         self.vice_metaR = PEMetaR(dataset, parameter)
         self.nceloss = NCELoss(0.5, self.device)  # TODO: add temperature to args
         self.metaR.to(self.device)
         self.vice_metaR.to(self.device)
-        # optimizer
+
+        # training
+        self.device = parameter['device']
         self.optimizer = torch.optim.Adam(self.metaR.parameters(), self.learning_rate)
-        # tensorboard log writer
-        if parameter['step'] == 'train':
-            self.writer = SummaryWriter(os.path.join(parameter['log_dir'], parameter['prefix']))
+
+        self.epoch = parameter['epoch']
+        self.base_epoch = parameter['base_epoch']
+        self.print_epoch = parameter['print_epoch']
+        self.early_stopping_patience = parameter['early_stopping_patience']
+        self.early_NOVEL_stopping_patience = parameter['early_NOVEL_stopping_patience']
+        self.eval_epoch = parameter['eval_epoch']
+        self.base_eval_epoch = parameter['base_eval_epoch']
+        self.checkpoint_epoch = parameter['checkpoint_epoch']
+
+        self.learning_rate = parameter['learning_rate']
+
         # dir
         self.state_dir = os.path.join(self.parameter['state_dir'], self.parameter['prefix'])
         if not os.path.isdir(self.state_dir):
@@ -126,22 +119,10 @@ class Trainer:
         logging.basicConfig(filename=logging_dir, level=logging.INFO, format="%(asctime)s - %(message)s")
         self.csv_dir = os.path.join(self.parameter['log_dir'], self.parameter['prefix'])
 
-        # load state_dict and params
-        if parameter['step'] in ['test', 'dev']:
-            self.reload()
-
     def save_checkpoint(self, epoch):
         torch.save(self.metaR.state_dict(), os.path.join(self.ckpt_dir, 'state_dict_' + str(epoch) + '.ckpt'))
 
-    def write_training_log(self, data, task, epoch):
-        self.writer.add_scalar(f'Training_Loss_{task}', data['Loss'], epoch)
-
     def write_fw_validating_log(self, data, record, task, epoch):
-        self.writer.add_scalar(f'Few_Shot_Validating_MRR_{task}', data['MRR'], epoch)
-        self.writer.add_scalar(f'Few_Shot_Validating_Hits_10_{task}', data['Hits@10'], epoch)
-        self.writer.add_scalar(f'Few_Shot_Validating_Hits_5_{task}', data['Hits@5'], epoch)
-        self.writer.add_scalar(f'Few_Shot_Validating_Hits_1_{task}', data['Hits@1'], epoch)
-
         if epoch + self.eval_epoch >= self.epoch:
             record[0][task, task] = data['MRR']
             record[1][task, task] = data['Hits@10']
@@ -150,10 +131,6 @@ class Trainer:
 
     def write_cl_validating_log(self, metrics, record, task):
         for i, data in enumerate(metrics):
-            self.writer.add_scalar(f'Continual_Learning_Validating_MRR_{task}', data['MRR'], i)
-            self.writer.add_scalar(f'Continual_Learning_Validating_Hits_10_{task}', data['Hits@10'], i)
-            self.writer.add_scalar(f'Continual_Learning_Validating_Hits_5_{task}', data['Hits@5'], i)
-            self.writer.add_scalar(f'Continual_Learning_Validating_Hits_1_{task}', data['Hits@1'], i)
             record[0][task, i] = data['MRR']
             record[1][task, i] = data['Hits@10']
             record[2][task, i] = data['Hits@5']
@@ -318,7 +295,6 @@ class Trainer:
                 # print the loss on specific epoch
                 if e % self.print_epoch == 0:
                     loss_num = loss.item()
-                    self.write_training_log({'Loss': loss_num}, task, e)
                     print('worse replay')
                     print("Epoch: {}\tLoss: {:.4f} {}, sofar best epo is : {}".format(e, loss_num,
                                                                                       self.train_data_loader.curr_rel_idx,
