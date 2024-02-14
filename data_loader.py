@@ -4,21 +4,20 @@ import numpy as np
 
 class DataLoader(object):
     def __init__(self, dataset, parameter, step='train'):
-        self.curr_rel_idx = 0
         self.tasks = dataset[step + '_tasks']
         self.rel2candidates = dataset['rel2candidates']
         self.e1rel_e2 = dataset['e1rel_e2']
-
-
         self.all_rels = sorted(list(self.tasks.keys()))
-        # print(self.all_rels)
-        random.shuffle(self.all_rels)
-      
+        random.shuffle(self.all_rels) if parameter['is_shuffle']
+        
+        self.curr_rel_idx = 0
         self.num_rels = len(self.all_rels)
+
         # base class settings
         self.bfew = parameter['base_classes_few']
         self.bnq = parameter['base_classes_num_query']
         self.br = parameter['base_classes_relation']
+
         # novel class settings
         self.few = parameter['few']
         self.nq = parameter['num_query']

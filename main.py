@@ -27,7 +27,7 @@ if __name__ == '__main__':
         data_dir[k] = params['data_path'] + v
 
     tail = ''
-    if params['data_form'] == 'In-Train':  # diff?
+    if params['data_form'] == 'In-Train':  
         tail = '_in_train'
 
     dataset = dict()
@@ -68,19 +68,3 @@ if __name__ == '__main__':
 
     if params['step'] == 'train':
         trainer.train()
-        # print("test")
-        # print(params['prefix'])
-        # trainer.reload()
-        # trainer.eval(istest=True)
-    elif params['step'] == 'test':
-        print(params['prefix'])
-        if params['eval_by_rel']:
-            trainer.eval_by_relation(istest=True)
-        else:
-            trainer.eval(istest=True)
-    elif params['step'] == 'dev':
-        print(params['prefix'])
-        if params['eval_by_rel']:
-            trainer.eval_by_relation(istest=False)
-        else:
-            trainer.eval(istest=False)
