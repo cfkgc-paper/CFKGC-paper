@@ -34,18 +34,19 @@ class DataLoader(object):
             self.tasks_relations_num = []
 
     def next_one(self, is_base):
-        few = self.bfew if is_base is True else self.few
-        nq = self.bnq if is_base is True else self.nq
+        few = self.bfew if is_base else self.few
+        nq = self.bnq if is_base else self.nq
 
         # get current relation and current candidates
         curr_rel = self.all_rels[self.curr_rel_idx]
         curr_cand = self.rel2candidates[curr_rel]
+
         # while len(curr_cand) <= 10 or len(self.tasks[curr_rel]) <= 10:  # ignore the small task sets
         #     curr_rel = self.all_rels[self.curr_rel_idx]
         #     self.curr_rel_idx = (self.curr_rel_idx + 1) % self.num_rels
         #     curr_cand = self.rel2candidates[curr_rel]
 
-        # get current tasks by curr_rel from all tasks and shuffle it
+        # get current tasks by curr_rel from all tasks 
         curr_tasks = self.tasks[curr_rel]
         curr_tasks_idx = np.arange(0, len(curr_tasks), 1)
         curr_tasks_idx = np.random.choice(curr_tasks_idx, few + nq)
@@ -79,12 +80,13 @@ class DataLoader(object):
         return support_triples, support_negative_triples, query_triples, negative_triples, curr_rel
 
     def next_batch(self, is_last, is_base):
-        relation = self.br if is_base is True else self.bs
         last_rel_idx = self.curr_rel_idx
-        next_batch_all = [self.next_one(is_base) for _ in range(relation)]
+        rel_num = self.br if is_base else self.bs
+        next_batch_all = [self.next_one(is_base) for _ in range(rel_num)]
 
         self.curr_rel_idx = self.curr_rel_idx if is_last is True else last_rel_idx
         support, support_negative, query, negative, curr_rel = zip(*next_batch_all)
+
         return [support, support_negative, query, negative], curr_rel
 
     def next_one_on_eval(self):
@@ -130,46 +132,4 @@ class DataLoader(object):
 
         return [support_triples, support_negative_triples, query_triple, negative_triples], curr_rel
 
-    def next_one_on_eval_by_relation(self, curr_rel):
-        if self.curr_tri_idx == len(self.tasks[curr_rel][self.few:]):
-            self.curr_tri_idx = 0
-            return "EOT", "EOT"
-
-        # get current triple
-        query_triple = self.tasks[curr_rel][self.few:][self.curr_tri_idx]
-        self.curr_tri_idx += 1
-        # curr_rel = query_triple[1]
-        curr_cand = self.rel2candidates[curr_rel]
-        curr_task = self.tasks[curr_rel]
-
-        # get support triples
-        support_triples = curr_task[:self.few]
-
-        # construct support negative
-        support_negative_triples = []
-        shift = 0
-        for triple in support_triples:
-            e1, rel, e2 = triple
-            while True:
-                negative = curr_cand[shift]
-                if (negative not in self.e1rel_e2[e1 + rel]) \
-                        and negative != e2:
-                    break
-                else:
-                    shift += 1
-            support_negative_triples.append([e1, rel, negative])
-
-        # construct negative triples
-        negative_triples = []
-        e1, rel, e2 = query_triple
-        for negative in curr_cand:
-            if (negative not in self.e1rel_e2[e1 + rel]) \
-                    and negative != e2:
-                negative_triples.append([e1, rel, negative])
-
-        support_triples = [support_triples]
-        support_negative_triples = [support_negative_triples]
-        query_triple = [[query_triple]]
-        negative_triples = [negative_triples]
-
-        return [support_triples, support_negative_triples, query_triple, negative_triples], curr_rel
+   

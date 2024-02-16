@@ -27,7 +27,7 @@ if __name__ == '__main__':
         data_dir[k] = params['data_path'] + v
 
     tail = ''
-    if params['data_form'] == 'In-Train':  
+    if params['data_form'] == 'In-Train':
         tail = '_in_train'
 
     dataset = dict()
@@ -43,7 +43,8 @@ if __name__ == '__main__':
     print("loading few shot dev_tasks ... ...")
     dataset['fw_dev_tasks'] = json.load(open(data_dir['few_shot_dev_tasks']))
     print("loading rel2candidates{} ... ...".format(tail))
-    dataset['rel2candidates'] = json.load(open(data_dir['rel2candidates' + tail]))
+    dataset['rel2candidates'] = json.load(
+        open(data_dir['rel2candidates' + tail]))
     print("loading e1rel_e2{} ... ...".format(tail))
     dataset['e1rel_e2'] = json.load(open(data_dir['e1rel_e2' + tail]))
     print("loading ent2id ... ...")
@@ -61,7 +62,8 @@ if __name__ == '__main__':
     test_data_loader = DataLoader(dataset, params, step='test')
     few_shot_dev_data_loader = DataLoader(dataset, params, step='fw_dev')
 
-    data_loaders = [train_data_loader, dev_data_loader, test_data_loader, few_shot_dev_data_loader]
+    data_loaders = [train_data_loader, dev_data_loader,
+                    test_data_loader, few_shot_dev_data_loader]
 
     # trainer
     trainer = Trainer(data_loaders, dataset, params)

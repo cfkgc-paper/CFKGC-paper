@@ -15,7 +15,7 @@ class PERelationMetaLearner(nn.Module):
         self.out_size = out_size
         self.fc1 = SubnetLinear(2 * embed_size, num_hidden1, sparsity=sparsity, bias=False)
         self.rel_fc1 = nn.Sequential(OrderedDict([
-            # ('bn', nn.BatchNorm1d(few)),    # TODO: why batchnorm1d with few
+            # ('bn', nn.BatchNorm1d(few)),  # TODO: add norm latter
             ('relu', nn.LeakyReLU()),
             ('drop', nn.Dropout(p=dropout_p)),
         ]))
@@ -139,7 +139,6 @@ class PEMetaR(nn.Module):
 
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 y = torch.ones(p_score.shape[0], 1).to(device)
-                # y = torch.Tensor([1]).to(self.device)
                 self.zero_grad()
                 loss = self.loss_func(p_score, n_score, y)
                 loss.backward(retain_graph=True)

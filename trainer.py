@@ -14,54 +14,60 @@ import logging
 from torch.autograd import Variable
 from utils import NCELoss
 
-def random_vice_param(model, vice_model, eta):
-    for (name, param), (vice_name, vice_param) in zip(model.named_parameters(), vice_model.named_parameters()):
-        vice_param.data = param.data.clone().detach() + eta * torch.normal(0,  # TODO: update eta to param if effect
-                                                                           torch.ones_like(
-                                                                          param.data.clone().detach()) * param.data.clone().detach().std())
-
 
 random_cache = [([["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:insect:pests"],
-                  ["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:insect:pests"],
+                  ["concept:insect:grubs", "concept:arthropodandotherarthropod",
+                      "concept:insect:pests"],
                   ["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:insect:pests"]],),
                 ([["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:arthropod:paper_wasps"],
-                  ["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:arthropod:paper_wasps"],
+                  ["concept:insect:grubs", "concept:arthropodandotherarthropod",
+                      "concept:arthropod:paper_wasps"],
                   ["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:arthropod:paper_wasps"]],),
                 ([["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:insect:invertebrates"],
-                  ["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:insect:invertebrates"],
+                  ["concept:insect:earthworms", "concept:arthropodandotherarthropod",
+                      "concept:insect:invertebrates"],
                   ["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:insect:invertebrates"]],
                  ),
                 ([["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:arthropod:copperheads"],
-                  ["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:arthropod:copperheads"],
+                  ["concept:insect:earthworms", "concept:arthropodandotherarthropod",
+                      "concept:arthropod:copperheads"],
                   ["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:arthropod:copperheads"]],)]
 
 cache_task = [([["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:insect:insects"],
-                ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:insect:insects"],
+                ["concept:insect:pests", "concept:animalthatfeedoninsect",
+                    "concept:insect:insects"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:insect:insects"]],),
               ([["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
-                ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
+                ["concept:insect:pests", "concept:animalthatfeedoninsect",
+                    "concept:invertebrate:soldier"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"]],),
               ([["concept:insect:bugs", "concept:animalthatfeedoninsect", "concept:insect:insects"],
-                ["concept:insect:bugs", "concept:animalthatfeedoninsect", "concept:insect:insects"],
+                ["concept:insect:bugs", "concept:animalthatfeedoninsect",
+                    "concept:insect:insects"],
                 ["concept:insect:bugs", "concept:animalthatfeedoninsect", "concept:insect:insects"]],
                ),
               ([["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
-                ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
+                ["concept:insect:pests", "concept:animalthatfeedoninsect",
+                    "concept:invertebrate:derbid_planthopper"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect",
                  "concept:invertebrate:derbid_planthopper"]],)]
 
 worse_cache = [([["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:insect:snails"],
-                 ["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:insect:snails"],
+                 ["concept:animal:invertebrates001",
+                     "concept:animalthatfeedoninsect", "concept:insect:snails"],
                  ["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:insect:snails"]],),
                ([["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
-                 ["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
+                 ["concept:animal:invertebrates001",
+                     "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
                  ["concept:animal:invertebrates001", "concept:animalthatfeedoninsect",
                   "concept:invertebrate:soldier"]],),
                ([["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"],
-                 ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"],
+                 ["concept:animal:creatures", "concept:animalthatfeedoninsect",
+                     "concept:insect:garden_pests"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"]],),
                ([["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
-                 ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
+                 ["concept:animal:creatures", "concept:animalthatfeedoninsect",
+                     "concept:invertebrate:derbid_planthopper"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"]],)]
 
 
@@ -86,13 +92,15 @@ class Trainer:
         # model
         self.metaR = PEMetaR(dataset, parameter)
         self.vice_metaR = PEMetaR(dataset, parameter)
-        self.nceloss = NCELoss(0.5, self.device)  # TODO: add temperature to args
+        self.lambda_ = parameter['lambda']
+        self.nceloss = NCELoss(parameter['temperature'], self.device)
         self.metaR.to(self.device)
         self.vice_metaR.to(self.device)
 
         # training
         self.device = parameter['device']
-        self.optimizer = torch.optim.Adam(self.metaR.parameters(), self.learning_rate)
+        self.optimizer = torch.optim.Adam(
+            self.metaR.parameters(), self.learning_rate)
 
         self.epoch = parameter['epoch']
         self.base_epoch = parameter['base_epoch']
@@ -106,21 +114,27 @@ class Trainer:
         self.learning_rate = parameter['learning_rate']
 
         # dir
-        self.state_dir = os.path.join(self.parameter['state_dir'], self.parameter['prefix'])
+        self.state_dir = os.path.join(
+            self.parameter['state_dir'], self.parameter['prefix'])
         if not os.path.isdir(self.state_dir):
             os.makedirs(self.state_dir)
-        self.ckpt_dir = os.path.join(self.parameter['state_dir'], self.parameter['prefix'], 'checkpoint')
+        self.ckpt_dir = os.path.join(
+            self.parameter['state_dir'], self.parameter['prefix'], 'checkpoint')
         if not os.path.isdir(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
         self.state_dict_file = ''
 
         # logging
-        logging_dir = os.path.join(self.parameter['log_dir'], self.parameter['prefix'], 'res.log')
-        logging.basicConfig(filename=logging_dir, level=logging.INFO, format="%(asctime)s - %(message)s")
-        self.csv_dir = os.path.join(self.parameter['log_dir'], self.parameter['prefix'])
+        logging_dir = os.path.join(
+            self.parameter['log_dir'], self.parameter['prefix'], 'res.log')
+        logging.basicConfig(
+            filename=logging_dir, level=logging.INFO, format="%(asctime)s - %(message)s")
+        self.csv_dir = os.path.join(
+            self.parameter['log_dir'], self.parameter['prefix'])
 
     def save_checkpoint(self, epoch):
-        torch.save(self.metaR.state_dict(), os.path.join(self.ckpt_dir, 'state_dict_' + str(epoch) + '.ckpt'))
+        torch.save(self.metaR.state_dict(), os.path.join(
+            self.ckpt_dir, 'state_dict_' + str(epoch) + '.ckpt'))
 
     def write_fw_validating_log(self, data, record, task, epoch):
         if epoch + self.eval_epoch >= self.epoch:
@@ -167,12 +181,36 @@ class Trainer:
         return np.array([fw_metric, cl_metric]).T
 
     def save_metrics(self, Hit10_val_mat, Hit1_val_mat, Hit5_val_mat, MRR_val_mat):
-        np.savetxt(os.path.join(self.csv_dir, 'MRR.csv'), MRR_val_mat, delimiter=",")
-        np.savetxt(os.path.join(self.csv_dir, 'Hit@10.csv'), Hit10_val_mat, delimiter=",")
-        np.savetxt(os.path.join(self.csv_dir, 'Hit@5.csv'), Hit5_val_mat, delimiter=",")
-        np.savetxt(os.path.join(self.csv_dir, 'Hit@1.csv'), Hit1_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'MRR.csv'),
+                   MRR_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'Hit@10.csv'),
+                   Hit10_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'Hit@5.csv'),
+                   Hit5_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'Hit@1.csv'),
+                   Hit1_val_mat, delimiter=",")
         mrr = self.get_total_mrr(MRR_val_mat)
-        np.savetxt(os.path.join(self.csv_dir, 'metric.csv'), mrr, delimiter=",", fmt='%s')
+        np.savetxt(os.path.join(self.csv_dir, 'metric.csv'),
+                   mrr, delimiter=",", fmt='%s')
+
+    def triple_rehearsal(self, task, base):
+        base_mask = F.sigmoid(self.metaR.relation_learner.base_mask.w_m)
+        mask = base_mask.sum(axis=-1).sum(axis=-
+                                          1).max() == base_mask.sum(axis=-1).sum(axis=-1)
+        idx = (mask > 0).nonzero(as_tuple=True)[0]
+        for i in idx:
+            for j, cur in enumerate(task):
+                # optimal repaly strategy
+                task[j] = task[j] + (base[j][i.item()],)
+                # train_task[j] = train_task[j] + worse_cache[j] # worse replay
+                # train_task[j] = train_task[j] + cache_task[j] # ours
+                # train_task[j] = train_task[j] + random_cache[j] # random replay
+
+    def random_vice_param(self):
+        for (name, param), (vice_name, vice_param) in zip(self.metaR.named_parameters(), self.vice_metaR.named_parameters()):
+            vice_param.data = param.data.clone().detach() + self.lambda_ * torch.normal(0,
+                                                                                        torch.ones_like(
+                                                                                            param.data.clone().detach()) * param.data.clone().detach().std())
 
     def rank_predict(self, data, x, ranks):
         # query_idx is the idx of positive score
@@ -190,30 +228,31 @@ class Trainer:
             data['Hits@1'] += 1
         data['MRR'] += 1.0 / rank
 
-    def do_one_step(self, task, consolidated_masks, epoch=None, is_base=None, iseval=False, curr_rel='', task_index=5):
+    def do_one_step(self, task, consolidated_masks, epoch=None, is_base=None, iseval=False, curr_rel=''):
         loss, p_score, n_score = 0, 0, 0
         if not iseval:
             self.optimizer.zero_grad()
 
-            # MODULE 3 START SPOILER
-            random_vice_param(self.metaR, self.vice_metaR, 1)
-            _, _, vice_rel = self.vice_metaR(task, 'train', epoch, is_base, iseval, curr_rel)
-            vice_rel = Variable(vice_rel.clone().detach().data, requires_grad=False)
-            # MODULE 3 END SPOILER, IF OFF THIS PART NEXT LOSS SHOULD BE REVISED
+            # MODULE 3 START: Multi-view Relation Augmentation
+            self.random_vice_param()
+            _, _, vice_rel = self.vice_metaR(
+                task, 'train', epoch, is_base, iseval, curr_rel)
+            vice_rel = Variable(
+                vice_rel.clone().detach().data, requires_grad=False)
 
-            p_score, n_score, rel = self.metaR(task, 'train', epoch, is_base, iseval, curr_rel)
+            p_score, n_score, rel = self.metaR(
+                task, 'train', epoch, is_base, iseval, curr_rel)
+
             y = torch.ones(p_score.shape[0], 1).to(self.device)
-
-            loss = self.metaR.loss_func(p_score, n_score, y) + 0.1 * self.nceloss(vice_rel,
-                                                                                  rel) if not is_base else self.metaR.loss_func(
+            loss = self.metaR.loss_func(p_score, n_score, y) + 0.1 * self.nceloss(vice_rel, rel) if not is_base else self.metaR.loss_func(
                 p_score, n_score, y)
-            # loss = self.metaR.loss_func(p_score, n_score, y)
             loss.backward()
 
             # Continual Subnet no backprop
             if consolidated_masks is not None and consolidated_masks != {}:  # Only do this for tasks 1 and beyond
                 for key in consolidated_masks.keys():
-                    module_name, module_attr = key.split('.')  # e.g. fc1.weight
+                    module_name, module_attr = key.split(
+                        '.')  # e.g. fc1.weight
                     # Zero-out gradients
                     if hasattr(getattr(self.metaR.relation_learner, module_name), module_attr):
                         if getattr(getattr(self.metaR.relation_learner, module_name), module_attr) is not None:
@@ -222,68 +261,43 @@ class Trainer:
             self.optimizer.step()
 
         elif curr_rel != '':
-            p_score, n_score, _ = self.metaR(task, 'val', iseval, curr_rel)  # TODO: update iseval and mode
+            # TODO: update iseval and mode
+            p_score, n_score, _ = self.metaR(task, 'val', iseval, curr_rel)
             y = torch.ones(p_score.shape[0], 1).to(self.device)
             loss = self.metaR.loss_func(p_score, n_score, y)
         return loss, p_score, n_score
 
     def train(self):
-        # TODO: load model 
-        # print('load base stage model')
-        # self.metaR.load_state_dict(torch.load('model.ckpt'))
-
         # initialization
+        # TODO: recorder
         Hit10_val_mat, Hit1_val_mat, Hit5_val_mat, MRR_val_mat, val_mat = self.init_val_mat()
         per_task_masks, consolidated_masks = {}, {}
-
-        # with open('saved_dictionary.pkl', 'wb') as f:
-        #     pickle.dump(per_task_masks, f)
 
         for task in range(self.num_tasks):
             # training by epoch
             epoch = self.base_epoch if task == 0 else self.epoch
             eval_epoch = self.base_eval_epoch if task == 0 else self.eval_epoch
 
-            best_loss = 100
+            best_loss = 100  # TODO:
             now_waiting = 0
             best_e = 0
-
 
             for e in range(epoch):
                 is_last = False if e != epoch - 1 else True
                 is_base = True if task == 0 else False
                 # sample one batch from data_loader
-                train_task, curr_rel = self.train_data_loader.next_batch(is_last, is_base)  # next_batch DEBUGGING
+                train_task, curr_rel = self.train_data_loader.next_batch(
+                    is_last, is_base)
 
                 patience = self.early_stopping_patience if is_base else self.early_NOVEL_stopping_patience
 
-                # MODULE 2 START REPLAY
-                # replay important base relation
+                # MODULE 2 START: Triple Rehearsal
                 if not is_base:
-                    base_mask = F.sigmoid(self.metaR.relation_learner.base_mask.w_m)
-                    mask = base_mask.sum(axis=-1).sum(axis=-1).max() == base_mask.sum(axis=-1).sum(axis=-1)
-                    idx = (mask > 0).nonzero(as_tuple=True)[0]
-                    for i in idx:
-                        for j, cur in enumerate(train_task):
-                            train_task[j] = train_task[j] # no replay
-                            # train_task[j] = train_task[j] + worse_cache[j] # worse replay
-                            # train_task[j] = train_task[j] + cache_task[j] # replay
-                            # train_task[j] = train_task[j] + random_cache[j] # random replay
-                
-                # MODULE 2 START REPLAY
-
-                # """
-                # test of whether the task themselves matters
-                # """
-                #
-                # if not is_base:
-                #     print('Epoch  {} has finished, validating continual learning...'.format(e))
-                #     valid_data = self.novel_continual_eval(curr_rel, task)
-                #     self.write_cl_validating_log(valid_data, val_mat, task)
-                #     break
+                    self.triple_rehearsal(train_task, base_task)
+                # MODULE 2 END
 
                 loss, _, _ = self.do_one_step(train_task, consolidated_masks, epoch, is_base, iseval=False,
-                                              curr_rel=curr_rel, task_index=task)
+                                              curr_rel=curr_rel)
 
                 if loss.item() < best_loss:
                     best_loss = loss.item()
@@ -295,7 +309,6 @@ class Trainer:
                 # print the loss on specific epoch
                 if e % self.print_epoch == 0:
                     loss_num = loss.item()
-                    print('worse replay')
                     print("Epoch: {}\tLoss: {:.4f} {}, sofar best epo is : {}".format(e, loss_num,
                                                                                       self.train_data_loader.curr_rel_idx,
                                                                                       best_e))
@@ -321,7 +334,8 @@ class Trainer:
                     self.write_fw_validating_log(valid_data, val_mat, task, e)
 
                 if e == eval_epoch:  # TODO
-                    print('Epoch  {} has finished, validating continual learning...'.format(e))
+                    print(
+                        'Epoch  {} has finished, validating continual learning...'.format(e))
                     valid_data = self.novel_continual_eval(curr_rel, task)
                     self.write_cl_validating_log(valid_data, val_mat, task)
 
@@ -338,21 +352,28 @@ class Trainer:
                 for key in per_task_masks[task].keys():
                     # Operation on sparsity
                     if consolidated_masks[key] is not None and per_task_masks[task][key] is not None:
-                        consolidated_masks[key] = 1 - ((1 - consolidated_masks[key]) * (1 - per_task_masks[task][key]))
+                        consolidated_masks[key] = 1 - (
+                            (1 - consolidated_masks[key]) * (1 - per_task_masks[task][key]))
 
         with open('saved_dictionary.pkl', 'wb') as f:
             pickle.dump(per_task_masks, f)
 
-        self.save_metrics(Hit10_val_mat, Hit1_val_mat, Hit5_val_mat, MRR_val_mat)
+        self.save_metrics(Hit10_val_mat, Hit1_val_mat,
+                          Hit5_val_mat, MRR_val_mat)
 
-        self.save_val_mat(Hit10_val_mat, Hit1_val_mat, Hit5_val_mat, MRR_val_mat)
+        self.save_val_mat(Hit10_val_mat, Hit1_val_mat,
+                          Hit5_val_mat, MRR_val_mat)
         print('Training has finished')
 
     def save_val_mat(self, Hit10_val_mat, Hit1_val_mat, Hit5_val_mat, MRR_val_mat):
-        np.savetxt(os.path.join(self.csv_dir, 'MRR.csv'), MRR_val_mat, delimiter=",")
-        np.savetxt(os.path.join(self.csv_dir, 'Hit@10.csv'), Hit10_val_mat, delimiter=",")
-        np.savetxt(os.path.join(self.csv_dir, 'Hit@5.csv'), Hit5_val_mat, delimiter=",")
-        np.savetxt(os.path.join(self.csv_dir, 'Hit@1.csv'), Hit1_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'MRR.csv'),
+                   MRR_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'Hit@10.csv'),
+                   Hit10_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'Hit@5.csv'),
+                   Hit5_val_mat, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'Hit@1.csv'),
+                   Hit1_val_mat, delimiter=",")
 
         idx = [i for i in range(MRR_val_mat.shape[0])]
         idx = [idx, idx]
@@ -363,13 +384,18 @@ class Trainer:
             if i != 0:
                 cl_metric[i] = j / i
         metric = np.array([fw_metric, cl_metric]).T
-        np.savetxt(os.path.join(self.csv_dir, 'metric.csv'), metric, delimiter=",")
+        np.savetxt(os.path.join(self.csv_dir, 'metric.csv'),
+                   metric, delimiter=",")
 
     def init_val_mat(self):
-        MRR_val_mat = np.zeros((self.num_tasks, self.num_tasks))  # record fw and cl vl MRR metrics
-        Hit1_val_mat = np.zeros((self.num_tasks, self.num_tasks))  # record fw and cl vl MRR metrics
-        Hit5_val_mat = np.zeros((self.num_tasks, self.num_tasks))  # record fw and cl vl MRR metrics
-        Hit10_val_mat = np.zeros((self.num_tasks, self.num_tasks))  # record fw and cl vl MRR metrics
+        # record fw and cl vl MRR metrics
+        MRR_val_mat = np.zeros((self.num_tasks, self.num_tasks))
+        # record fw and cl vl MRR metrics
+        Hit1_val_mat = np.zeros((self.num_tasks, self.num_tasks))
+        # record fw and cl vl MRR metrics
+        Hit5_val_mat = np.zeros((self.num_tasks, self.num_tasks))
+        # record fw and cl vl MRR metrics
+        Hit10_val_mat = np.zeros((self.num_tasks, self.num_tasks))
         val_mat = [MRR_val_mat, Hit10_val_mat, Hit5_val_mat, Hit1_val_mat]
         return Hit10_val_mat, Hit1_val_mat, Hit5_val_mat, MRR_val_mat, val_mat
 
@@ -489,7 +515,8 @@ class Trainer:
         return data
 
     def get_epoch_score(self, curr_rel, data, eval_task, ranks, t, temp):
-        _, p_score, n_score = self.do_one_step(eval_task, None, iseval=True, curr_rel=curr_rel)
+        _, p_score, n_score = self.do_one_step(
+            eval_task, None, iseval=True, curr_rel=curr_rel)
         x = torch.cat([n_score, p_score], 1).squeeze()
         self.rank_predict(data, x, ranks)
 

@@ -25,6 +25,8 @@ def get_params():
     args.add_argument("-nt", "--num_tasks", default=8, type=int)
     
     # model setting
+    args.add_argument("-t", "--temperature", default=0.5, type=float)
+    args.add_argument("-l", "--lambda", default=1.0, type=float)  # [0.1 for NELL, 1 for Wiki]
     args.add_argument("-dim", "--embed_dim", default=100, type=int)
     args.add_argument("-p", "--dropout_p", default=-1.5, type=float)
     args.add_argument("-b", "--beta", default=4, type=float)
