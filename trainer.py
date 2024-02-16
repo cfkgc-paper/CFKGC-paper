@@ -266,6 +266,103 @@ class Trainer:
             y = torch.ones(p_score.shape[0], 1).to(self.device)
             loss = self.metaR.loss_func(p_score, n_score, y)
         return loss, p_score, n_score
+    
+    def get_epoch_score(self, curr_rel, data, eval_task, ranks, t, temp):
+        _, p_score, n_score = self.do_one_step(
+            eval_task, None, iseval=True, curr_rel=curr_rel)
+        x = torch.cat([n_score, p_score], 1).squeeze()
+        self.rank_predict(data, x, ranks)
+
+        # print current temp data dynamically
+        for k in data.keys():
+            temp[k] = data[k] / t
+        sys.stdout.write("{}\tMRR: {:.3f}\tHits@10: {:.3f}\tHits@5: {:.3f}\tHits@1: {:.3f}\r".format(
+            t, temp['MRR'], temp['Hits@10'], temp['Hits@5'], temp['Hits@1']))
+        sys.stdout.flush()
+        
+    def novel_continual_eval(self, previous_rel, task):
+        self.metaR.eval()
+        # clear sharing rel_q
+        self.metaR.rel_q_sharing = dict()
+
+        data_loader = self.dev_data_loader
+        current_eval_num = 0
+
+        for rel in previous_rel:
+            data_loader.eval_triples.extend(data_loader.tasks[rel][self.few:])
+            current_eval_num += len(data_loader.tasks[rel][self.few:])
+
+        data_loader.num_tris = len(data_loader.eval_triples)
+        data_loader.tasks_relations_num.append(current_eval_num)
+        data_loader.curr_tri_idx = 0
+
+        # initial return data of validation
+        data = {'MRR': 0, 'Hits@1': 0, 'Hits@5': 0, 'Hits@10': 0}
+        tasks_data = []
+        ranks = []
+
+        t = 0
+        i = 0
+        previous_t = 0
+        temp = dict()
+        while True:
+            # sample all the eval tasks
+            eval_task, curr_rel = data_loader.next_one_on_eval()
+
+            # at the end of sample tasks, a symbol 'EOT' will return
+            if eval_task == 'EOT':
+                break
+            t += 1
+            self.get_epoch_score(curr_rel, data, eval_task, ranks, t, temp)
+
+        tasks_data.append(data)
+
+        # print overall evaluation result and return it
+        for data in tasks_data:
+            for k in data.keys():
+                data[k] = round(data[k] / t, 3)
+
+        print('continual learning', tasks_data)
+        if self.parameter['step'] == 'train':
+            self.logging_cl_training_data(tasks_data, task)
+        return tasks_data
+
+    def fw_eval(self, task, epoch=None):
+        self.metaR.eval()
+        # clear sharing rel_q
+        self.metaR.rel_q_sharing = dict()
+
+        data_loader = self.fw_dev_data_loader
+        data_loader.curr_tri_idx = 0
+
+        # initial return data of validation
+        data = {'MRR': 0, 'Hits@1': 0, 'Hits@5': 0, 'Hits@10': 0}
+        ranks = []
+
+        t = 0
+        temp = dict()
+        while True:
+            # sample all the eval tasks
+            eval_task, curr_rel = data_loader.next_one_on_eval()
+            # at the end of sample tasks, a symbol 'EOT' will return
+            if eval_task == 'EOT':
+                break
+            t += 1
+            self.get_epoch_score(curr_rel, data, eval_task, ranks, t, temp)
+
+        # print overall evaluation result and return it
+        for k in data.keys():
+            data[k] = round(data[k] / t, 3)
+
+        if self.parameter['step'] == 'train':
+            self.logging_fw_training_data(data, epoch, task)
+        else:
+            self.logging_eval_data(data, self.state_dict_file)
+
+        print("few shot {}\tMRR: {:.3f}\tHits@10: {:.3f}\tHits@5: {:.3f}\tHits@1: {:.3f}\r".format(
+            t, data['MRR'], data['Hits@10'], data['Hits@5'], data['Hits@1']))
+
+        return data
 
     def train(self):
         # initialization
@@ -274,22 +371,23 @@ class Trainer:
         per_task_masks, consolidated_masks = {}, {}
 
         for task in range(self.num_tasks):
+            # early stop setting
+            best_loss = 100  
+            now_waiting = 0
+            best_e = 0
+
             # training by epoch
             epoch = self.base_epoch if task == 0 else self.epoch
             eval_epoch = self.base_eval_epoch if task == 0 else self.eval_epoch
 
-            best_loss = 100  # TODO:
-            now_waiting = 0
-            best_e = 0
-
             for e in range(epoch):
                 is_last = False if e != epoch - 1 else True
                 is_base = True if task == 0 else False
+                patience = self.early_stopping_patience if is_base else self.early_NOVEL_stopping_patience
+
                 # sample one batch from data_loader
                 train_task, curr_rel = self.train_data_loader.next_batch(
                     is_last, is_base)
-
-                patience = self.early_stopping_patience if is_base else self.early_NOVEL_stopping_patience
 
                 # MODULE 2 START: Triple Rehearsal
                 if not is_base:
@@ -313,14 +411,15 @@ class Trainer:
                                                                                       self.train_data_loader.curr_rel_idx,
                                                                                       best_e))
 
-                # if now_waiting > patience:
-                #     print(f"stop at {e} for {patience} epoches, loss hasn't been better.")
-                #     print(f"best loss is {best_loss}, best epoch is {best_e}")
-                #     valid_data = self.fw_eval(task, epoch=e)  # few shot val
-                #     self.write_fw_validating_log(valid_data, val_mat, task, e)
-                #     valid_data = self.novel_continual_eval(curr_rel, task)
-                #     self.write_cl_validating_log(valid_data, val_mat, task)
-                #     break
+                if now_waiting > patience:
+                    print(
+                        f"stop at {e} for {patience} epoches, loss hasn't been better.")
+                    print(f"best loss is {best_loss}, best epoch is {best_e}")
+                    valid_data = self.fw_eval(task, epoch=e)  # few shot val
+                    self.write_fw_validating_log(valid_data, val_mat, task, e)
+                    valid_data = self.novel_continual_eval(curr_rel, task)
+                    self.write_cl_validating_log(valid_data, val_mat, task)
+                    break
 
                 # save checkpoint on specific epoch
                 if e % self.checkpoint_epoch == 0 and e != 0:
@@ -330,20 +429,19 @@ class Trainer:
                 # do evaluation on specific epoch
                 if e % eval_epoch == 0 and e != 0:
                     print('Epoch  {} has finished, validating few shot...'.format(e))
-                    valid_data = self.fw_eval(task, epoch=e)  # few shot val
+                    valid_data = self.fw_eval(task, epoch=e)  # few shot eval
                     self.write_fw_validating_log(valid_data, val_mat, task, e)
 
-                if e == eval_epoch:  # TODO
+                if e == eval_epoch - 1:
                     print(
                         'Epoch  {} has finished, validating continual learning...'.format(e))
-                    valid_data = self.novel_continual_eval(curr_rel, task)
+                    valid_data = self.novel_continual_eval(
+                        curr_rel, task)  # continual learning eval
                     self.write_cl_validating_log(valid_data, val_mat, task)
 
             base_task = train_task if is_base else base_task
 
-            if is_base:
-                torch.save(self.metaR.state_dict(), 'model.ckpt')
-
+            # MODULE 2 START: Meta-learner Modulation
             # Consolidate task masks to keep track of parameters to-update or not
             per_task_masks[task] = self.metaR.relation_learner.get_masks()
             if task == 0:
@@ -354,9 +452,6 @@ class Trainer:
                     if consolidated_masks[key] is not None and per_task_masks[task][key] is not None:
                         consolidated_masks[key] = 1 - (
                             (1 - consolidated_masks[key]) * (1 - per_task_masks[task][key]))
-
-        with open('saved_dictionary.pkl', 'wb') as f:
-            pickle.dump(per_task_masks, f)
 
         self.save_metrics(Hit10_val_mat, Hit1_val_mat,
                           Hit5_val_mat, MRR_val_mat)
@@ -415,117 +510,3 @@ class Trainer:
             assert self.train_data_loader.curr_rel_idx != 0 if epoch != self.epoch - 1 else 51
             print(f'Test idx {self.train_data_loader.curr_rel_idx}')
 
-    def novel_continual_eval(self, previous_rel, task):
-        self.metaR.eval()
-        # clear sharing rel_q
-        self.metaR.rel_q_sharing = dict()
-
-        data_loader = self.dev_data_loader
-        current_eval_num = 0
-
-        for rel in previous_rel:
-            data_loader.eval_triples.extend(data_loader.tasks[rel][self.few:])
-            current_eval_num += len(data_loader.tasks[rel][self.few:])
-
-        data_loader.num_tris = len(data_loader.eval_triples)
-        data_loader.tasks_relations_num.append(current_eval_num)
-        data_loader.curr_tri_idx = 0
-
-        # initial return data of validation
-        data = {'MRR': 0, 'Hits@1': 0, 'Hits@5': 0, 'Hits@10': 0}
-        tasks_data = []
-        ranks = []
-
-        t = 0
-        i = 0
-        previous_t = 0
-        temp = dict()
-        while True:
-            # sample all the eval tasks
-            eval_task, curr_rel = data_loader.next_one_on_eval()
-
-            # at the end of sample tasks, a symbol 'EOT' will return
-            if eval_task == 'EOT':
-                break
-            t += 1
-
-            self.get_epoch_score(curr_rel, data, eval_task, ranks, t, temp)
-
-        # Seperate eval TODO test whether means?
-        if t == data_loader.tasks_relations_num[i] + previous_t:
-            # cache task score
-            tasks_data.append(data)
-            # clear data
-            data = {'MRR': 0, 'Hits@1': 0, 'Hits@5': 0, 'Hits@10': 0}
-            i += 1
-            previous_t = t
-
-        tasks_data.append(data)
-
-        # print overall evaluation result and return it
-        for data in tasks_data:
-            for k in data.keys():
-                data[k] = round(data[k] / t, 3)
-
-        # if self.parameter['step'] == 'train':
-        #     self.logging_training_data(data, epoch)
-        # else:
-        #     self.logging_eval_data(data, self.state_dict_file, istest)
-
-        print('continual learning', tasks_data)
-        if self.parameter['step'] == 'train':
-            self.logging_cl_training_data(tasks_data, task)
-        return tasks_data
-
-    def fw_eval(self, task, epoch=None):
-        self.metaR.eval()
-        # clear sharing rel_q
-        self.metaR.rel_q_sharing = dict()
-
-        data_loader = self.fw_dev_data_loader
-        data_loader.curr_tri_idx = 0
-
-        # initial return data of validation
-        data = {'MRR': 0, 'Hits@1': 0, 'Hits@5': 0, 'Hits@10': 0}
-        ranks = []
-
-        t = 0
-        temp = dict()
-        while True:
-            # sample all the eval tasks
-            eval_task, curr_rel = data_loader.next_one_on_eval()
-            # at the end of sample tasks, a symbol 'EOT' will return
-            if eval_task == 'EOT':
-                break
-            t += 1
-            self.get_epoch_score(curr_rel, data, eval_task, ranks, t, temp)
-
-        # print overall evaluation result and return it
-        for k in data.keys():
-            data[k] = round(data[k] / t, 3)
-
-        if self.parameter['step'] == 'train':
-            self.logging_fw_training_data(data, epoch, task)
-        else:
-            self.logging_eval_data(data, self.state_dict_file)
-
-        print("few shot {}\tMRR: {:.3f}\tHits@10: {:.3f}\tHits@5: {:.3f}\tHits@1: {:.3f}\r".format(
-            t, data['MRR'], data['Hits@10'], data['Hits@5'], data['Hits@1']))
-
-        return data
-
-    def get_epoch_score(self, curr_rel, data, eval_task, ranks, t, temp):
-        _, p_score, n_score = self.do_one_step(
-            eval_task, None, iseval=True, curr_rel=curr_rel)
-        x = torch.cat([n_score, p_score], 1).squeeze()
-        self.rank_predict(data, x, ranks)
-
-        # print current temp data dynamically
-        for k in data.keys():
-            temp[k] = data[k] / t
-        sys.stdout.write("{}\tMRR: {:.3f}\tHits@10: {:.3f}\tHits@5: {:.3f}\tHits@1: {:.3f}\r".format(
-            t, temp['MRR'], temp['Hits@10'], temp['Hits@5'], temp['Hits@1']))
-        sys.stdout.flush()
-
-    def test_replay_base(self, train_task):
-        print(f"Test base support replay {train_task[0][-1]}")
