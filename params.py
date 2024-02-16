@@ -28,9 +28,9 @@ def get_params():
     args.add_argument("-t", "--temperature", default=0.5, type=float)
     args.add_argument("-l", "--lambda", default=1.0, type=float)  # [0.1 for NELL, 1 for Wiki]
     args.add_argument("-dim", "--embed_dim", default=100, type=int)
-    args.add_argument("-p", "--dropout_p", default=-1.5, type=float)
-    args.add_argument("-b", "--beta", default=4, type=float)
-    args.add_argument("-m", "--margin", default=0, type=float)
+    args.add_argument("-p", "--dropout_p", default=0.5, type=float)
+    args.add_argument("-b", "--beta", default=5, type=float)
+    args.add_argument("-m", "--margin", default=1, type=float)
 
     # training setting
     args.add_argument("-gpu", "--device", default=0, type=int)
