@@ -4,20 +4,6 @@ import torch.nn.functional as F
 import math
 
 
-def percentile(scores, sparsity):
-    k = 1 + round(.01 * float(sparsity) * (scores.numel() - 1))
-    return scores.view(-1).kthvalue(k).values.item()
-
-
-class GetSubnetFaster(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, scores, zeros, ones, sparsity):
-        k_val = percentile(scores, sparsity * 100)
-        return torch.where(scores < k_val, zeros.to(scores.device), ones.to(scores.device))
-
-    @staticmethod
-    def backward(ctx, g):
-        return g, None, None, None
 
 
 class SubnetLinear(nn.Linear):
@@ -80,14 +66,3 @@ class SubnetLinear(nn.Linear):
             nn.init.uniform_(self.b_m, -bound, bound)
 
 
-class EntityMask(nn.Module):
-    def __init__(self, relation, few, in_features, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.w_m = nn.Parameter(torch.empty(relation, few, in_features))
-        self.init_mask_parameters()
-
-    def forward(self, x, weight_mask=None, bias_mask=None, mode="train"):
-        return F.sigmoid(self.w_m) * x
-
-    def init_mask_parameters(self):
-        nn.init.kaiming_uniform_(self.w_m, a=math.sqrt(5))
