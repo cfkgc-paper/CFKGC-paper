@@ -193,25 +193,6 @@ class Trainer:
         np.savetxt(os.path.join(self.csv_dir, 'metric.csv'),
                    mrr, delimiter=",", fmt='%s')
 
-    def triple_rehearsal(self, task, base):
-        base_mask = F.sigmoid(self.metaR.relation_learner.base_mask.w_m)
-        mask = base_mask.sum(axis=-1).sum(axis=-
-                                          1).max() == base_mask.sum(axis=-1).sum(axis=-1)
-        idx = (mask > 0).nonzero(as_tuple=True)[0]
-        for i in idx:
-            for j, cur in enumerate(task):
-                # optimal repaly strategy
-                task[j] = task[j] + (base[j][i.item()],)
-                # train_task[j] = train_task[j] + worse_cache[j] # worse replay
-                # train_task[j] = train_task[j] + cache_task[j] # ours
-                # train_task[j] = train_task[j] + random_cache[j] # random replay
-
-    def random_vice_param(self):
-        for (name, param), (vice_name, vice_param) in zip(self.metaR.named_parameters(), self.vice_metaR.named_parameters()):
-            vice_param.data = param.data.clone().detach() + self.lambda_ * torch.normal(0,
-                                                                                        torch.ones_like(
-                                                                                            param.data.clone().detach()) * param.data.clone().detach().std())
-
     def rank_predict(self, data, x, ranks):
         # query_idx is the idx of positive score
         query_idx = x.shape[0] - 1
@@ -228,44 +209,7 @@ class Trainer:
             data['Hits@1'] += 1
         data['MRR'] += 1.0 / rank
 
-    def do_one_step(self, task, consolidated_masks, epoch=None, is_base=None, iseval=False, curr_rel=''):
-        loss, p_score, n_score = 0, 0, 0
-        if not iseval:
-            self.optimizer.zero_grad()
-
-            # MODULE 3 START: Multi-view Relation Augmentation
-            self.random_vice_param()
-            _, _, vice_rel = self.vice_metaR(
-                task, 'train', epoch, is_base, iseval, curr_rel)
-            vice_rel = Variable(
-                vice_rel.clone().detach().data, requires_grad=False)
-
-            p_score, n_score, rel = self.metaR(
-                task, 'train', epoch, is_base, iseval, curr_rel)
-
-            y = torch.ones(p_score.shape[0], 1).to(self.device)
-            loss = self.metaR.loss_func(p_score, n_score, y) + 0.1 * self.nceloss(vice_rel, rel) if not is_base else self.metaR.loss_func(
-                p_score, n_score, y)
-            loss.backward()
-
-            # Continual Subnet no backprop
-            if consolidated_masks is not None and consolidated_masks != {}:  # Only do this for tasks 1 and beyond
-                for key in consolidated_masks.keys():
-                    module_name, module_attr = key.split(
-                        '.')  # e.g. fc1.weight
-                    # Zero-out gradients
-                    if hasattr(getattr(self.metaR.relation_learner, module_name), module_attr):
-                        if getattr(getattr(self.metaR.relation_learner, module_name), module_attr) is not None:
-                            getattr(getattr(self.metaR.relation_learner, module_name), module_attr).grad[
-                                consolidated_masks[key] == 1.0] = 0
-            self.optimizer.step()
-
-        elif curr_rel != '':
-            # TODO: update iseval and mode
-            p_score, n_score, _ = self.metaR(task, 'val', iseval, curr_rel)
-            y = torch.ones(p_score.shape[0], 1).to(self.device)
-            loss = self.metaR.loss_func(p_score, n_score, y)
-        return loss, p_score, n_score
+    
     
     def get_epoch_score(self, curr_rel, data, eval_task, ranks, t, temp):
         _, p_score, n_score = self.do_one_step(
