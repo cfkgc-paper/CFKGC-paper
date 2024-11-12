@@ -43,20 +43,20 @@ pip install -r requirements.txt
 
 The experiments use two datasets:
 
-1. NELL-One [[Baidu Netdisk](https://pan.baidu.com/s/14ytl4goZCsVeWDIvmeTzeQ?pwd=gnn8)]
-2. Wiki-One [[Baidu Netdisk](https://pan.baidu.com/s/17-0rwDYHJPaW9sfKv_sfFg?pwd=74xz)]
+1. NELL-One [[Baidu Netdisk](https://pan.baidu.com/s/14ytl4goZCsVeWDIvmeTzeQ?pwd=gnn8)][[Google Drive(Pending...)]()]
+2. Wiki-One [[Baidu Netdisk](https://pan.baidu.com/s/17-0rwDYHJPaW9sfKv_sfFg?pwd=74xz)][[Google Drive(Pending...)]()]
 
 Total Zip with all codes: [[Baidu Netdisk]](https://pan.baidu.com/s/1Lo1a3KLMidLeNCTqZMCawA?pwd=pgnu)
 
 The Structure of the project is as followings:  
->GANA-FewShotKGC  
-&nbsp;&nbsp;&nbsp;&nbsp;|--./NELL  
-&nbsp;&nbsp;&nbsp;&nbsp;|--./Wiki  
-&nbsp;&nbsp;&nbsp;&nbsp;|--trainer.py  
-&nbsp;&nbsp;&nbsp;&nbsp;|--params.py  
-&nbsp;&nbsp;&nbsp;&nbsp;|--main.py  
-&nbsp;&nbsp;&nbsp;&nbsp;|--embedding.py  
-&nbsp;&nbsp;&nbsp;&nbsp;|--data_loader.py
+>CFKGC-paper<br>
+>&nbsp;&nbsp;&nbsp;&nbsp;|--./NELL  
+>&nbsp;&nbsp;&nbsp;&nbsp;|--./Wiki  
+>&nbsp;&nbsp;&nbsp;&nbsp;|--trainer.py  
+>&nbsp;&nbsp;&nbsp;&nbsp;|--params.py  
+>&nbsp;&nbsp;&nbsp;&nbsp;|--main.py  
+>&nbsp;&nbsp;&nbsp;&nbsp;|--embedding.py  
+>&nbsp;&nbsp;&nbsp;&nbsp;|--data_loader.py<br>
 >&nbsp;&nbsp;&nbsp;&nbsp;|--...
 
 Statistics of the datasets:
