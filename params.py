@@ -1,7 +1,7 @@
 import torch
 import argparse
 
-BEPO = 1853
+BEPO = 9999999
 EPO = 22222
 
 
@@ -26,7 +26,7 @@ def get_params():
     
     # model setting
     args.add_argument("-t", "--temperature", default=0.5, type=float)
-    args.add_argument("-l", "--lambda", default=1.0, type=float)  # [0.1 for NELL, 1 for Wiki]
+    args.add_argument("-l", "--lambda", default=0.1, type=float)  # [0.1 for NELL, 1 for Wiki]
     args.add_argument("-dim", "--embed_dim", default=100, type=int)
     args.add_argument("-p", "--dropout_p", default=0.5, type=float)
     args.add_argument("-b", "--beta", default=5, type=float)
@@ -35,12 +35,13 @@ def get_params():
     # training setting
     args.add_argument("-gpu", "--device", default=0, type=int)
     args.add_argument("-lr", "--learning_rate", default=0.001, type=float)
-    args.add_argument("-bepo", "--base_epoch", default=1832, type=int)  # [1832 for NELL, 3584 for Wiki]
-    args.add_argument("-epo", "--epoch", default=100000, type=int)  # novel epoch  
-    args.add_argument("-es_p", "--early_stopping_patience", default=1000, type=int) # base patience
+    args.add_argument("-bepo", "--base_epoch", default=BEPO, type=int)  # [1832 for NELL, 3584 for Wiki]
+    args.add_argument("-epo", "--epoch", default=EPO, type=int)  # novel epoch
+    args.add_argument("-es_p", "--early_stopping_patience", default=500, type=int) # base patience
     args.add_argument("-es_np", "--early_NOVEL_stopping_patience", default=50, type=int)    # [50 for NELL, 300 for Wiki]
     args.add_argument("-prt_epo", "--print_epoch", default=100, type=int)
     args.add_argument("-beval_epo", "--base_eval_epoch", default=BEPO - 1, type=int)  # [1831 for NELL, 3583 for Wiki]   
+    args.add_argument("-ckpt_epo", "--checkpoint_epoch", default=10000, type=int)
     args.add_argument("-eval_epo", "--eval_epoch", default=EPO - 1, type=int)
 
     # other setting    
