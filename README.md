@@ -9,6 +9,8 @@ This repository contains the implementation of the paper:
 > Zhuofeng Li, Haoxiang Zhang, Qiannan Zhang, Ziyi Kou, and Shichao Pei. 2024. Learning from Novel Knowledge: Continual Few-shot Knowledge Graph Completion. In Proceedings of the 33rd ACM International Conference on Information and Knowledge Management (CIKM '24). Association for Computing Machinery, New York, NY, USA, 1326–1335. https://doi.org/10.1145/3627673.3679734
 > 
 
++ Please star our repo 🌟 and cite our paper if you feel useful. Feel free to open an issue if you have any questions.
+
 ## Introduction
 
 Knowledge graph (KG) completion is vital for uncovering missing knowledge and addressing incompleteness in KGs. While few-shot models following meta-learning have shown promise for rare relations, they typically assume static KGs. In reality, KGs evolve with newly emerging relations, requiring continual learning capabilities.
@@ -18,7 +20,7 @@ This work proposes a novel framework for continual few-shot KG completion that a
 1. Catastrophic forgetting
 2. Scarcity of novel relations
 
-## Key Features
+**Key Features**
 
 - Data-level triple rehearsal and model-level meta-learner modulation to combat forgetting
 - Multi-view relation augmentation using self-supervised learning
@@ -26,7 +28,7 @@ This work proposes a novel framework for continual few-shot KG completion that a
 
 ## Method Overview
 
-![https://github.com/cfkgc-paper/CFKGC-paper/blob/main/imgs/overview.png](https://github.com/cfkgc-paper/CFKGC-paper/blob/main/imgs/overview.png)
+![./imgs/overview.png](./imgs/overview.png)
 
 ## Getting Started
 
