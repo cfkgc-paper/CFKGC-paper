@@ -48,6 +48,17 @@ The experiments use two datasets:
 
 Total Zip with all codes: [[Baidu Netdisk]](https://pan.baidu.com/s/1Lo1a3KLMidLeNCTqZMCawA?pwd=pgnu)
 
+The Structure of the project is as followings:  
+>GANA-FewShotKGC  
+&nbsp;&nbsp;&nbsp;&nbsp;|--./NELL  
+&nbsp;&nbsp;&nbsp;&nbsp;|--./Wiki  
+&nbsp;&nbsp;&nbsp;&nbsp;|--trainer.py  
+&nbsp;&nbsp;&nbsp;&nbsp;|--params.py  
+&nbsp;&nbsp;&nbsp;&nbsp;|--main.py  
+&nbsp;&nbsp;&nbsp;&nbsp;|--embedding.py  
+&nbsp;&nbsp;&nbsp;&nbsp;|--data_loader.py
+>&nbsp;&nbsp;&nbsp;&nbsp;|--...
+
 Statistics of the datasets:
 
 | Dataset | #Relation | #Entity | #Triples | #Task |
