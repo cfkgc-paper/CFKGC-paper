@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 ### Data Preparation
 
-The experiments use two datasets:
+The experiments use two datasets, the followings provide the embedding we processed:
 
 1. NELL-One [[Baidu Netdisk](https://pan.baidu.com/s/14ytl4goZCsVeWDIvmeTzeQ?pwd=gnn8)][[Google Drive(Pending...)]()]
 2. Wiki-One [[Baidu Netdisk](https://pan.baidu.com/s/17-0rwDYHJPaW9sfKv_sfFg?pwd=74xz)][[Google Drive(Pending...)]()]
