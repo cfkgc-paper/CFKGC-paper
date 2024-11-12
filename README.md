@@ -2,7 +2,7 @@
 
 # Continual Few-shot Knowledge Graph Completion
 
-CIKM 2024: "[Learning from Novel Knowledge: Continual Few-shot Knowledge Graph Completion]([https://dl.acm.org/doi/pdf/10.1145/3627673.3679734])"
+CIKM 2024: "[Learning from Novel Knowledge: Continual Few-shot Knowledge Graph Completion][https://dl.acm.org/doi/pdf/10.1145/3627673.3679734]"
 
 This repository contains the implementation of the paper:
 
