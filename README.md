@@ -20,7 +20,7 @@ This work proposes a novel framework for continual few-shot KG completion that a
 1. Catastrophic forgetting
 2. Scarcity of novel relations
 
-## Key Features
+**Key Features**
 
 - Data-level triple rehearsal and model-level meta-learner modulation to combat forgetting
 - Multi-view relation augmentation using self-supervised learning
