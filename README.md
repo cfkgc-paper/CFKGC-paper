@@ -28,7 +28,7 @@ This work proposes a novel framework for continual few-shot KG completion that a
 
 ## Method Overview
 
-![https://github.com/cfkgc-paper/CFKGC-paper/blob/main/imgs/overview.png](https://github.com/cfkgc-paper/CFKGC-paper/blob/main/imgs/overview.png)
+![./imgs/overview.png](./imgs/overview.png)
 
 ## Getting Started
 
