@@ -8,8 +8,9 @@ class DataLoader(object):
         self.rel2candidates = dataset['rel2candidates']
         self.e1rel_e2 = dataset['e1rel_e2']
         self.all_rels = sorted(list(self.tasks.keys()))
-        random.shuffle(self.all_rels) if parameter['is_shuffle']
-        
+        if parameter['is_shuffle']:
+            random.shuffle(self.all_rels)
+
         self.curr_rel_idx = 0
         self.num_rels = len(self.all_rels)
 
@@ -131,5 +132,3 @@ class DataLoader(object):
         negative_triples = [negative_triples]
 
         return [support_triples, support_negative_triples, query_triple, negative_triples], curr_rel
-
-   

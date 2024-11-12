@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import numpy as np
 
 from network.param_emb_models import *
-from tensorboardX import SummaryWriter
 import os
 import sys
 import torch
@@ -14,66 +13,69 @@ import logging
 from torch.autograd import Variable
 from utils import NCELoss
 
-
 random_cache = [([["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:insect:pests"],
                   ["concept:insect:grubs", "concept:arthropodandotherarthropod",
-                      "concept:insect:pests"],
+                   "concept:insect:pests"],
                   ["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:insect:pests"]],),
                 ([["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:arthropod:paper_wasps"],
                   ["concept:insect:grubs", "concept:arthropodandotherarthropod",
-                      "concept:arthropod:paper_wasps"],
+                   "concept:arthropod:paper_wasps"],
                   ["concept:insect:grubs", "concept:arthropodandotherarthropod", "concept:arthropod:paper_wasps"]],),
                 ([["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:insect:invertebrates"],
                   ["concept:insect:earthworms", "concept:arthropodandotherarthropod",
-                      "concept:insect:invertebrates"],
+                   "concept:insect:invertebrates"],
                   ["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:insect:invertebrates"]],
                  ),
                 ([["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:arthropod:copperheads"],
                   ["concept:insect:earthworms", "concept:arthropodandotherarthropod",
-                      "concept:arthropod:copperheads"],
-                  ["concept:insect:earthworms", "concept:arthropodandotherarthropod", "concept:arthropod:copperheads"]],)]
+                   "concept:arthropod:copperheads"],
+                  ["concept:insect:earthworms", "concept:arthropodandotherarthropod",
+                   "concept:arthropod:copperheads"]],)]
 
 cache_task = [([["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:insect:insects"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect",
-                    "concept:insect:insects"],
+                 "concept:insect:insects"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:insect:insects"]],),
               ([["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect",
-                    "concept:invertebrate:soldier"],
+                 "concept:invertebrate:soldier"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"]],),
               ([["concept:insect:bugs", "concept:animalthatfeedoninsect", "concept:insect:insects"],
                 ["concept:insect:bugs", "concept:animalthatfeedoninsect",
-                    "concept:insect:insects"],
+                 "concept:insect:insects"],
                 ["concept:insect:bugs", "concept:animalthatfeedoninsect", "concept:insect:insects"]],
                ),
               ([["concept:insect:pests", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect",
-                    "concept:invertebrate:derbid_planthopper"],
+                 "concept:invertebrate:derbid_planthopper"],
                 ["concept:insect:pests", "concept:animalthatfeedoninsect",
                  "concept:invertebrate:derbid_planthopper"]],)]
 
 worse_cache = [([["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:insect:snails"],
                  ["concept:animal:invertebrates001",
-                     "concept:animalthatfeedoninsect", "concept:insect:snails"],
+                  "concept:animalthatfeedoninsect", "concept:insect:snails"],
                  ["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:insect:snails"]],),
                ([["concept:animal:invertebrates001", "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
                  ["concept:animal:invertebrates001",
-                     "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
+                  "concept:animalthatfeedoninsect", "concept:invertebrate:soldier"],
                  ["concept:animal:invertebrates001", "concept:animalthatfeedoninsect",
                   "concept:invertebrate:soldier"]],),
                ([["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect",
-                     "concept:insect:garden_pests"],
+                  "concept:insect:garden_pests"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:insect:garden_pests"]],),
-               ([["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"],
+               ([["concept:animal:creatures", "concept:animalthatfeedoninsect",
+                  "concept:invertebrate:derbid_planthopper"],
                  ["concept:animal:creatures", "concept:animalthatfeedoninsect",
-                     "concept:invertebrate:derbid_planthopper"],
-                 ["concept:animal:creatures", "concept:animalthatfeedoninsect", "concept:invertebrate:derbid_planthopper"]],)]
+                  "concept:invertebrate:derbid_planthopper"],
+                 ["concept:animal:creatures", "concept:animalthatfeedoninsect",
+                  "concept:invertebrate:derbid_planthopper"]],)]
 
 
 class Trainer:
     def __init__(self, data_loaders, dataset, parameter):
         self.parameter = parameter
+        self.device = parameter['device']
 
         # data loader
         self.train_data_loader = data_loaders[0]
@@ -98,7 +100,7 @@ class Trainer:
         self.vice_metaR.to(self.device)
 
         # training
-        self.device = parameter['device']
+        self.learning_rate = parameter['learning_rate']
         self.optimizer = torch.optim.Adam(
             self.metaR.parameters(), self.learning_rate)
 
@@ -109,9 +111,7 @@ class Trainer:
         self.early_NOVEL_stopping_patience = parameter['early_NOVEL_stopping_patience']
         self.eval_epoch = parameter['eval_epoch']
         self.base_eval_epoch = parameter['base_eval_epoch']
-        self.checkpoint_epoch = parameter['checkpoint_epoch']
-
-        self.learning_rate = parameter['learning_rate']
+        self.checkpoint_epoch = parameter["checkpoint_epoch"]
 
         # dir
         self.state_dir = os.path.join(
@@ -127,6 +127,8 @@ class Trainer:
         # logging
         logging_dir = os.path.join(
             self.parameter['log_dir'], self.parameter['prefix'], 'res.log')
+        if not os.path.exists(logging_dir):
+            os.makedirs(logging_dir)
         logging.basicConfig(
             filename=logging_dir, level=logging.INFO, format="%(asctime)s - %(message)s")
         self.csv_dir = os.path.join(
@@ -193,6 +195,26 @@ class Trainer:
         np.savetxt(os.path.join(self.csv_dir, 'metric.csv'),
                    mrr, delimiter=",", fmt='%s')
 
+    def triple_rehearsal(self, task, base):
+        base_mask = F.sigmoid(self.metaR.relation_learner.base_mask.w_m)
+        mask = base_mask.sum(axis=-1).sum(axis=-
+        1).max() == base_mask.sum(axis=-1).sum(axis=-1)
+        idx = (mask > 0).nonzero(as_tuple=True)[0]
+        for i in idx:
+            for j, cur in enumerate(task):
+                # optimal repaly strategy
+                task[j] = task[j] + (base[j][i.item()],)
+                # train_task[j] = train_task[j] + worse_cache[j] # worse replay
+                # train_task[j] = train_task[j] + cache_task[j] # ours
+                # train_task[j] = train_task[j] + random_cache[j] # random replay
+
+    def random_vice_param(self):
+        for (name, param), (vice_name, vice_param) in zip(self.metaR.named_parameters(),
+                                                          self.vice_metaR.named_parameters()):
+            vice_param.data = param.data.clone().detach() + self.lambda_ * torch.normal(0,
+                                                                                        torch.ones_like(
+                                                                                            param.data.clone().detach()) * param.data.clone().detach().std())
+
     def rank_predict(self, data, x, ranks):
         # query_idx is the idx of positive score
         query_idx = x.shape[0] - 1
@@ -209,8 +231,46 @@ class Trainer:
             data['Hits@1'] += 1
         data['MRR'] += 1.0 / rank
 
-    
-    
+    def do_one_step(self, task, consolidated_masks, epoch=None, is_base=None, iseval=False, curr_rel=''):
+        loss, p_score, n_score = 0, 0, 0
+        if not iseval:
+            self.optimizer.zero_grad()
+
+            # MODULE 3 START: Multi-view Relation Augmentation
+            self.random_vice_param()
+            _, _, vice_rel = self.vice_metaR(
+                task, 'train', epoch, is_base, iseval, curr_rel)
+            vice_rel = Variable(
+                vice_rel.clone().detach().data, requires_grad=False)
+
+            p_score, n_score, rel = self.metaR(
+                task, 'train', epoch, is_base, iseval, curr_rel)
+
+            y = torch.ones(p_score.shape[0], 1).to(self.device)
+            loss = self.metaR.loss_func(p_score, n_score, y) + 0.1 * self.nceloss(vice_rel,
+                                                                                  rel) if not is_base else self.metaR.loss_func(
+                p_score, n_score, y)
+            loss.backward()
+
+            # Continual Subnet no backprop
+            if consolidated_masks is not None and consolidated_masks != {}:  # Only do this for tasks 1 and beyond
+                for key in consolidated_masks.keys():
+                    module_name, module_attr = key.split(
+                        '.')  # e.g. fc1.weight
+                    # Zero-out gradients
+                    if hasattr(getattr(self.metaR.relation_learner, module_name), module_attr):
+                        if getattr(getattr(self.metaR.relation_learner, module_name), module_attr) is not None:
+                            getattr(getattr(self.metaR.relation_learner, module_name), module_attr).grad[
+                                consolidated_masks[key] == 1.0] = 0
+            self.optimizer.step()
+
+        elif curr_rel != '':
+            # TODO: update is_eval and mode
+            p_score, n_score, _ = self.metaR(task, 'val', iseval, curr_rel)
+            y = torch.ones(p_score.shape[0], 1).to(self.device)
+            loss = self.metaR.loss_func(p_score, n_score, y)
+        return loss, p_score, n_score
+
     def get_epoch_score(self, curr_rel, data, eval_task, ranks, t, temp):
         _, p_score, n_score = self.do_one_step(
             eval_task, None, iseval=True, curr_rel=curr_rel)
@@ -223,7 +283,7 @@ class Trainer:
         sys.stdout.write("{}\tMRR: {:.3f}\tHits@10: {:.3f}\tHits@5: {:.3f}\tHits@1: {:.3f}\r".format(
             t, temp['MRR'], temp['Hits@10'], temp['Hits@5'], temp['Hits@1']))
         sys.stdout.flush()
-        
+
     def novel_continual_eval(self, previous_rel, task):
         self.metaR.eval()
         # clear sharing rel_q
@@ -316,7 +376,7 @@ class Trainer:
 
         for task in range(self.num_tasks):
             # early stop setting
-            best_loss = 100  
+            best_loss = 100
             now_waiting = 0
             best_e = 0
 
@@ -355,9 +415,9 @@ class Trainer:
                                                                                       self.train_data_loader.curr_rel_idx,
                                                                                       best_e))
 
-                if now_waiting > patience:
+                if now_waiting > patience:  # Controls the early stop manually
                     print(
-                        f"stop at {e} for {patience} epoches, loss hasn't been better.")
+                        f"stop at {e} for {patience} epochs, loss hasn't been better.")
                     print(f"best loss is {best_loss}, best epoch is {best_e}")
                     valid_data = self.fw_eval(task, epoch=e)  # few shot val
                     self.write_fw_validating_log(valid_data, val_mat, task, e)
@@ -385,7 +445,7 @@ class Trainer:
 
             base_task = train_task if is_base else base_task
 
-            # MODULE 2 START: Meta-learner Modulation
+            # MODULE 1 START: Meta-learner Modulation
             # Consolidate task masks to keep track of parameters to-update or not
             per_task_masks[task] = self.metaR.relation_learner.get_masks()
             if task == 0:
@@ -395,7 +455,7 @@ class Trainer:
                     # Operation on sparsity
                     if consolidated_masks[key] is not None and per_task_masks[task][key] is not None:
                         consolidated_masks[key] = 1 - (
-                            (1 - consolidated_masks[key]) * (1 - per_task_masks[task][key]))
+                                (1 - consolidated_masks[key]) * (1 - per_task_masks[task][key]))
 
         self.save_metrics(Hit10_val_mat, Hit1_val_mat,
                           Hit5_val_mat, MRR_val_mat)
@@ -453,4 +513,3 @@ class Trainer:
             assert len(train_task[2][0]) == self.num_query
             assert self.train_data_loader.curr_rel_idx != 0 if epoch != self.epoch - 1 else 51
             print(f'Test idx {self.train_data_loader.curr_rel_idx}')
-
