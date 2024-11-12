@@ -107,6 +107,7 @@ args.add_argument("-nt", "--num_tasks", default=8, type=int)
 ```
 
 ## Citation
+Please star our repo 🌟 and cite our paper if you feel useful. Feel free to open an issue if you have any questions.
 
 ```
 @inproceedings{10.1145/3627673.3679734,
