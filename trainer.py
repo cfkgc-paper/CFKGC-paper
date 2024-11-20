@@ -124,13 +124,19 @@ class Trainer:
             os.makedirs(self.ckpt_dir)
         self.state_dict_file = ''
 
-        # logging
         logging_dir = os.path.join(
-            self.parameter['log_dir'], self.parameter['prefix'], 'res.log')
+            self.parameter['log_dir'], self.parameter['prefix'], 'res')
         if not os.path.exists(logging_dir):
             os.makedirs(logging_dir)
+
+        log_file = os.path.join(logging_dir, 'log.txt')
         logging.basicConfig(
-            filename=logging_dir, level=logging.INFO, format="%(asctime)s - %(message)s")
+            filename=log_file,
+            level=logging.INFO,
+            format="%(asctime)s - %(message)s"
+        )
+
+        # 设置CSV目录
         self.csv_dir = os.path.join(
             self.parameter['log_dir'], self.parameter['prefix'])
 
