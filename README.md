@@ -45,8 +45,8 @@ pip install -r requirements.txt
 
 The experiments use two datasets, the followings provide the embedding we processed:
 
-1. NELL-One [[Baidu Netdisk](https://pan.baidu.com/s/14ytl4goZCsVeWDIvmeTzeQ?pwd=gnn8)][[Google Drive(Pending...)]()]
-2. Wiki-One [[Baidu Netdisk](https://pan.baidu.com/s/17-0rwDYHJPaW9sfKv_sfFg?pwd=74xz)][[Google Drive(Pending...)]()]
+1. NELL-One [[Baidu Netdisk](https://pan.baidu.com/s/14ytl4goZCsVeWDIvmeTzeQ?pwd=gnn8)][[Google Drive](https://drive.google.com/drive/folders/1ZjFDAPlgLU54LJA1UXO9QB-O6QPqDGgO)]
+2. Wiki-One [[Baidu Netdisk](https://pan.baidu.com/s/17-0rwDYHJPaW9sfKv_sfFg?pwd=74xz)][[Google Drive](https://drive.google.com/drive/folders/1ZjFDAPlgLU54LJA1UXO9QB-O6QPqDGgO)]
 
 Total Zip with all codes: [[Baidu Netdisk]](https://pan.baidu.com/s/1Lo1a3KLMidLeNCTqZMCawA?pwd=pgnu)
 
